@@ -378,11 +378,18 @@ const ITEM_DEFS = {
   steak:   { type:'protein', label:'Steak',   color:'#ef4444', color2:'#991b1b' },
   beans:   { type:'protein', label:'Beans',   color:'#a3e635', color2:'#65a30d' },
   fish:    { type:'protein', label:'Fish',    color:'#38bdf8', color2:'#0284c7' },
+  // More protein
+  shrimp:  { type:'protein', label:'Shrimp', color:'#fb923c', color2:'#ea580c' },
+  tofu:    { type:'protein', label:'Tofu',   color:'#fef3c7', color2:'#d97706' },
+  yogurt:  { type:'protein', label:'Yogurt', color:'#e0e7ff', color2:'#6366f1' },
   // Non-protein: type='normal'
   donut:   { type:'normal', label:'Donut',  color:'#f9a8d4', color2:'#ec4899' },
   candy:   { type:'normal', label:'Candy',  color:'#c084fc', color2:'#9333ea' },
   cake:    { type:'normal', label:'Cake',   color:'#fda4af', color2:'#e11d48' },
   icecream:{ type:'normal', label:'IceCream',color:'#fbcfe8', color2:'#db2777' },
+  fries:   { type:'normal', label:'Fries',  color:'#fbbf24', color2:'#d97706' },
+  pizza:   { type:'normal', label:'Pizza',  color:'#fdba74', color2:'#c2410c' },
+  cookie:  { type:'normal', label:'Cookie', color:'#d4a373', color2:'#8b5e3c' },
   // Bacteria/virus: type='bad'
   bacteria:{ type:'bad', label:'Bacteria', color:'#84cc16', color2:'#365314' },
   virus:   { type:'bad', label:'Virus',    color:'#a855f7', color2:'#581c87' },
@@ -391,8 +398,8 @@ const ITEM_DEFS = {
   vitamin:  { type:'good', label:'Vitamin',   color:'#fb923c', color2:'#c2410c' },
 };
 
-const PROTEIN_KEYS = ['egg','milk','cheese','chicken','steak','beans','fish'];
-const NORMAL_KEYS = ['donut','candy','cake','icecream'];
+const PROTEIN_KEYS = ['egg','milk','cheese','chicken','steak','beans','fish','shrimp','tofu','yogurt'];
+const NORMAL_KEYS = ['donut','candy','cake','icecream','fries','pizza','cookie'];
 const BAD_KEYS = ['bacteria','virus'];
 const GOOD_KEYS = ['probiotic','vitamin'];
 
@@ -589,6 +596,116 @@ function drawItemSVG(ctx, item) {
       ctx.fillStyle = '#fbcfe8'; ctx.fill();
       ctx.strokeStyle = '#db2777'; ctx.lineWidth = 2; ctx.stroke();
       drawCuteFace(ctx, 0, -s*0.08, s*0.16);
+      break;
+
+    case 'shrimp':
+      // Shrimp - curved body
+      ctx.beginPath();
+      ctx.arc(0, 0, s*0.3, -0.5, Math.PI+0.5);
+      ctx.lineWidth = s*0.18;
+      ctx.strokeStyle = '#fb923c'; ctx.stroke();
+      ctx.lineWidth = s*0.12;
+      ctx.strokeStyle = '#fdba74'; ctx.stroke();
+      // Tail
+      ctx.beginPath(); ctx.moveTo(s*0.15,s*0.25); ctx.lineTo(s*0.3,s*0.4); ctx.lineTo(s*0.05,s*0.38);
+      ctx.fillStyle = '#fb923c'; ctx.fill();
+      // Eye
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-s*0.2, -s*0.2, s*0.07, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath(); ctx.arc(-s*0.18, -s*0.2, s*0.035, 0, Math.PI*2); ctx.fill();
+      drawCuteFace(ctx, -s*0.05, -s*0.05, s*0.14);
+      break;
+
+    case 'tofu':
+      // White block
+      ctx.fillStyle = '#fef9ef';
+      roundRect(ctx, -s*0.3, -s*0.25, s*0.6, s*0.5, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#d4a373'; ctx.lineWidth = 2; ctx.stroke();
+      // Grid lines
+      ctx.strokeStyle = 'rgba(200,180,150,0.3)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,-s*0.25); ctx.lineTo(0,s*0.25); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*0.3,0); ctx.lineTo(s*0.3,0); ctx.stroke();
+      drawCuteFace(ctx, 0, 0, s*0.17);
+      break;
+
+    case 'yogurt':
+      // Cup
+      ctx.fillStyle = '#e0e7ff';
+      ctx.beginPath();
+      ctx.moveTo(-s*0.28, -s*0.2);
+      ctx.lineTo(-s*0.22, s*0.35);
+      ctx.lineTo(s*0.22, s*0.35);
+      ctx.lineTo(s*0.28, -s*0.2);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.stroke();
+      // Lid
+      ctx.fillStyle = '#818cf8';
+      roundRect(ctx, -s*0.32, -s*0.3, s*0.64, s*0.12, 3);
+      ctx.fill();
+      // Label
+      ctx.fillStyle = '#4f46e5'; ctx.font = `bold ${s*0.13}px sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText('YOGURT', 0, s*0.15);
+      drawCuteFace(ctx, 0, s*0.02, s*0.14);
+      break;
+
+    case 'fries':
+      // Container
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(-s*0.25, s*0.05);
+      ctx.lineTo(-s*0.18, s*0.4);
+      ctx.lineTo(s*0.18, s*0.4);
+      ctx.lineTo(s*0.25, s*0.05);
+      ctx.closePath(); ctx.fill();
+      // Fries sticking out
+      const friesCols = ['#fbbf24','#f59e0b','#fcd34d','#fbbf24','#f59e0b'];
+      for(let i=0;i<5;i++){
+        const fx = -s*0.15 + i*s*0.075;
+        ctx.fillStyle = friesCols[i];
+        roundRect(ctx, fx, -s*0.35+i*s*0.05, s*0.06, s*0.4, 2);
+        ctx.fill();
+      }
+      drawCuteFace(ctx, 0, s*0.2, s*0.13);
+      break;
+
+    case 'pizza':
+      // Triangle slice
+      ctx.beginPath();
+      ctx.moveTo(0, -s*0.38);
+      ctx.lineTo(-s*0.35, s*0.3);
+      ctx.lineTo(s*0.35, s*0.3);
+      ctx.closePath();
+      ctx.fillStyle = '#fdba74'; ctx.fill();
+      ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 2; ctx.stroke();
+      // Cheese top
+      ctx.beginPath();
+      ctx.moveTo(0, -s*0.28);
+      ctx.lineTo(-s*0.28, s*0.2);
+      ctx.lineTo(s*0.28, s*0.2);
+      ctx.closePath();
+      ctx.fillStyle = '#fbbf24'; ctx.fill();
+      // Pepperoni
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath(); ctx.arc(-s*0.05, s*0.0, s*0.06, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.1, s*0.1, s*0.05, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-s*0.08, -s*0.12, s*0.04, 0, Math.PI*2); ctx.fill();
+      drawCuteFace(ctx, 0, s*0.05, s*0.15);
+      break;
+
+    case 'cookie':
+      // Round cookie
+      ctx.beginPath(); ctx.arc(0, 0, s*0.35, 0, Math.PI*2);
+      ctx.fillStyle = '#d4a373'; ctx.fill();
+      ctx.strokeStyle = '#8b5e3c'; ctx.lineWidth = 2; ctx.stroke();
+      // Chocolate chips
+      ctx.fillStyle = '#5c3a1e';
+      ctx.beginPath(); ctx.arc(-s*0.12, -s*0.1, s*0.05, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.15, s*0.05, s*0.04, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-s*0.05, s*0.15, s*0.045, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.08, -s*0.15, s*0.035, 0, Math.PI*2); ctx.fill();
+      drawCuteFace(ctx, 0, 0, s*0.18);
       break;
 
     case 'bacteria':
@@ -855,7 +972,7 @@ function getSpawnInterval() {
   return [1000, 750, 500][level-1] || 500;
 }
 function getFallSpeed() {
-  return [1.5, 2.2, 3.2][level-1] || 3.2;
+  return [1.0, 1.5, 2.2][level-1] || 2.2;
 }
 function getItemSize() {
   return Math.min(50, W * 0.08);
@@ -910,8 +1027,8 @@ function addScore(pts, x, y) {
   if (pts > 0) showScorePopup(x, y, '+' + pts, '#22c55e');
   else if (pts < 0) showScorePopup(x, y, pts.toString(), '#ef4444');
 
-  // Fail: score below 0
-  if (score < 0) {
+  // Fail: score below -5
+  if (score <= -5) {
     gameRunning = false;
     sfxBad();
     showFailScreen();
