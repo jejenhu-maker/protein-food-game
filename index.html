@@ -117,13 +117,15 @@ canvas { display: block; }
 /* HUD */
 #hud {
   position: fixed; top: 0; left: 0; right: 0;
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: center; align-items: center;
+  gap: 24px;
   padding: 10px 20px;
   background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%);
   z-index: 50;
   color: #fff;
   font-size: clamp(1rem, 3vw, 1.4rem);
   font-weight: bold;
+  text-align: center;
 }
 #hud .score { text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
 #hud .level { text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
@@ -829,6 +831,34 @@ function drawItemSVG(ctx, item) {
       ctx.fillText('V', 0, 0);
       break;
   }
+  // Draw food label above item (still in translated coordinate space)
+  const labelMap = {
+    egg:'Egg', milk:'Milk', cheese:'Cheese', chicken:'Chicken',
+    steak:'Steak', beans:'Beans', fish:'Fish', shrimp:'Shrimp',
+    tofu:'Tofu', yogurt:'Yogurt', donut:'Donut', candy:'Candy',
+    cake:'Cake', icecream:'Ice Cream', fries:'Fries', pizza:'Pizza',
+    cookie:'Cookie', bacteria:'Germ!', virus:'Virus!',
+    probiotic:'Probiotic', vitamin:'Vitamin',
+    ruirui:'睿睿', kaikai:'愷愷'
+  };
+  const lbl = labelMap[kind] || kind;
+  const fontSize = Math.max(9, s*0.22);
+  ctx.save();
+  ctx.rotate(-Math.sin(wobble) * 0.15); // counter-rotate so label stays straight
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  const lblY = -s*0.52 - 2;
+  const tw = ctx.measureText(lbl).width + 10;
+  const th = fontSize + 4;
+  // Pill background
+  roundRect(ctx, -tw/2, lblY - th, tw, th, 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+  // Text
+  ctx.fillStyle = '#444';
+  ctx.fillText(lbl, 0, lblY - 1);
+  ctx.restore();
+
   ctx.restore();
 }
 
@@ -1250,15 +1280,15 @@ function gameLoop(time) {
     lastSpawn = 0;
   }
 
-  // Move dino (slower, more precise control)
+  // Move dino (gentle, kid-friendly speed)
   const moveSpeed = dino.speed * (dt / 16);
-  if (keys['ArrowLeft'] || keys['a']) dino.x -= moveSpeed * 2.5;
-  if (keys['ArrowRight'] || keys['d']) dino.x += moveSpeed * 2.5;
+  if (keys['ArrowLeft'] || keys['a']) dino.x -= moveSpeed * 1.2;
+  if (keys['ArrowRight'] || keys['d']) dino.x += moveSpeed * 1.2;
 
-  // Touch control: move towards touch (smoother)
+  // Touch control: move towards touch (smooth & gentle)
   if (touchX !== null) {
     const diff = touchX - dino.x;
-    dino.x += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * 3);
+    dino.x += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * 1.8);
   }
 
   // Clamp dino
@@ -1294,7 +1324,11 @@ function gameLoop(time) {
     if (item.y > H + item.size) {
       const def = ITEM_DEFS[item.kind];
       if (def.type === 'protein') {
-        addScore(-1, item.x, H - 30);
+        const missNames = {egg:'Egg',milk:'Milk',cheese:'Cheese',chicken:'Chicken',steak:'Steak',beans:'Beans',fish:'Fish',shrimp:'Shrimp',tofu:'Tofu',yogurt:'Yogurt'};
+        showScorePopup(item.x, H - 50, `Miss ${missNames[item.kind]||item.kind}! -1`, '#ef4444');
+        score -= 1;
+        document.getElementById('scoreVal').textContent = score;
+        if (score <= -5) { gameRunning = false; sfxBad(); showFailScreen(); }
         sfxMiss();
       }
       items.splice(i, 1);
