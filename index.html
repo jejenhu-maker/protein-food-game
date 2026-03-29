@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Protein Food Game 🦕</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  overflow: hidden;
+  font-family: 'Segoe UI', 'Comic Sans MS', cursive, sans-serif;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+canvas { display: block; }
+
+/* Screens overlay */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100;
+  transition: opacity 0.5s;
+}
+.screen.hidden { opacity: 0; pointer-events: none; }
+
+#startScreen {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffd89b 100%);
+}
+#startScreen h1 {
+  font-size: clamp(2rem, 8vw, 4.5rem);
+  color: #2d6a4f;
+  text-shadow: 3px 3px 0 #b7e4c7, 6px 6px 0 rgba(0,0,0,0.05);
+  margin-bottom: 0.2em;
+  animation: titleBounce 2s ease-in-out infinite;
+}
+#startScreen .subtitle {
+  font-size: clamp(0.9rem, 3vw, 1.4rem);
+  color: #555;
+  margin-bottom: 2em;
+}
+@keyframes titleBounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.btn {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  border: none; border-radius: 50px;
+  padding: 18px 50px;
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  font-weight: bold; color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(67,233,123,0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn:hover { transform: scale(1.08); box-shadow: 0 8px 30px rgba(67,233,123,0.5); }
+.btn:active { transform: scale(0.95); }
+
+#levelScreen {
+  background: rgba(0,0,0,0.65);
+}
+#levelScreen h2 {
+  font-size: clamp(2.5rem, 10vw, 5rem);
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255,255,255,0.5);
+  animation: levelPop 0.6s ease-out;
+}
+@keyframes levelPop {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+#winScreen {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+}
+#winScreen h1 {
+  font-size: clamp(2rem, 8vw, 4rem);
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.6);
+  margin-bottom: 0.3em;
+}
+#winScreen .btn {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  box-shadow: 0 6px 20px rgba(245,87,108,0.4);
+  margin-top: 1em;
+}
+
+/* HUD */
+#hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 20px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%);
+  z-index: 50;
+  color: #fff;
+  font-size: clamp(1rem, 3vw, 1.4rem);
+  font-weight: bold;
+}
+#hud .score { text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+#hud .level { text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+#hud .goal { font-size: 0.8em; opacity: 0.8; }
+
+/* Score popup */
+.score-popup {
+  position: fixed;
+  font-size: 2rem;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 60;
+  animation: popUp 0.8s ease-out forwards;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+@keyframes popUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+}
+
+/* Fireworks canvas */
+#fireworks {
+  position: fixed; inset: 0;
+  z-index: 99;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="startScreen" class="screen">
+  <svg width="120" height="120" viewBox="0 0 120 120" style="margin-bottom:20px">
+    <ellipse cx="60" cy="100" rx="35" ry="10" fill="rgba(0,0,0,0.1)"/>
+    <g transform="translate(60,55)">
+      <!-- body -->
+      <ellipse cx="0" cy="15" rx="22" ry="28" fill="#4ade80"/>
+      <ellipse cx="0" cy="15" rx="18" ry="24" fill="#6ee7a0"/>
+      <!-- belly -->
+      <ellipse cx="0" cy="20" rx="13" ry="16" fill="#bbf7d0"/>
+      <!-- head -->
+      <circle cx="0" cy="-18" r="20" fill="#4ade80"/>
+      <!-- eyes -->
+      <circle cx="-8" cy="-22" r="6" fill="#fff"/>
+      <circle cx="8" cy="-22" r="6" fill="#fff"/>
+      <circle cx="-6" cy="-22" r="3.5" fill="#1a1a2e"/>
+      <circle cx="10" cy="-22" r="3.5" fill="#1a1a2e"/>
+      <circle cx="-5" cy="-23" r="1.2" fill="#fff"/>
+      <circle cx="11" cy="-23" r="1.2" fill="#fff"/>
+      <!-- mouth -->
+      <path d="M-8,-10 Q0,-5 8,-10" stroke="#2d6a4f" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- blush -->
+      <ellipse cx="-15" cy="-14" rx="4" ry="2.5" fill="rgba(255,150,150,0.5)"/>
+      <ellipse cx="15" cy="-14" rx="4" ry="2.5" fill="rgba(255,150,150,0.5)"/>
+      <!-- arms -->
+      <ellipse cx="-24" cy="10" rx="6" ry="10" fill="#4ade80" transform="rotate(15,-24,10)"/>
+      <ellipse cx="24" cy="10" rx="6" ry="10" fill="#4ade80" transform="rotate(-15,24,10)"/>
+      <!-- feet -->
+      <ellipse cx="-10" cy="42" rx="10" ry="5" fill="#4ade80"/>
+      <ellipse cx="10" cy="42" rx="10" ry="5" fill="#4ade80"/>
+      <!-- spikes -->
+      <circle cx="0" cy="-40" r="4" fill="#22c55e"/>
+      <circle cx="-8" cy="-37" r="3" fill="#22c55e"/>
+      <circle cx="8" cy="-37" r="3" fill="#22c55e"/>
+    </g>
+  </svg>
+  <h1>🥩 Protein Food 🥚</h1>
+  <div class="subtitle">Help Dino catch healthy food! 🦕</div>
+  <button class="btn" onclick="startGame()">🎮 Start Game</button>
+</div>
+
+<!-- Level Transition Screen -->
+<div id="levelScreen" class="screen hidden">
+  <h2 id="levelText">Level 1</h2>
+</div>
+
+<!-- Win Screen -->
+<div id="winScreen" class="screen hidden">
+  <div id="trophySvg"></div>
+  <h1>🎉 Champion is you! 🎉</h1>
+  <button class="btn" onclick="startGame()">🔄 Play Again</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" style="display:none;">
+  <div class="score">⭐ Score: <span id="scoreVal">0</span></div>
+  <div class="level">🏆 Level <span id="levelVal">1</span> <span class="goal">/ Goal: 30</span></div>
+</div>
+
+<!-- Game Canvas -->
+<canvas id="gameCanvas"></canvas>
+<canvas id="fireworks"></canvas>
+
+<script>
+// ===== AUDIO =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+function playSound(freq, duration, type='sine', vol=0.15) {
+  try {
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function sfxCatch()  { playSound(880, 0.12); playSound(1100, 0.12); }
+function sfxBad()    { playSound(200, 0.3, 'sawtooth', 0.1); }
+function sfxBonus()  { playSound(660, 0.1); setTimeout(()=>playSound(880,0.1),80); setTimeout(()=>playSound(1100,0.15),160); }
+function sfxMiss()   { playSound(300, 0.2, 'triangle', 0.08); }
+function sfxLevelUp(){ for(let i=0;i<5;i++) setTimeout(()=>playSound(500+i*150,0.15),i*100); }
+function sfxWin()    { for(let i=0;i<8;i++) setTimeout(()=>playSound(400+i*100,0.2,'sine',0.1),i*120); }
+
+// ===== GAME STATE =====
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const fwCanvas = document.getElementById('fireworks');
+const fwCtx = fwCanvas.getContext('2d');
+
+let W, H;
+let score, level, gameRunning, items, dino, spawnTimer, levelTransition;
+const GOAL = 30;
+const MAX_LEVEL = 3;
+
+// Item definitions
+const ITEM_DEFS = {
+  // Protein foods: type='protein'
+  egg:     { type:'protein', label:'Egg',     color:'#fbbf24', color2:'#fef3c7' },
+  milk:    { type:'protein', label:'Milk',    color:'#e0e7ff', color2:'#818cf8' },
+  cheese:  { type:'protein', label:'Cheese',  color:'#fbbf24', color2:'#f59e0b' },
+  chicken: { type:'protein', label:'Chicken', color:'#fdba74', color2:'#c2410c' },
+  steak:   { type:'protein', label:'Steak',   color:'#ef4444', color2:'#991b1b' },
+  beans:   { type:'protein', label:'Beans',   color:'#a3e635', color2:'#65a30d' },
+  fish:    { type:'protein', label:'Fish',    color:'#38bdf8', color2:'#0284c7' },
+  // Non-protein: type='normal'
+  donut:   { type:'normal', label:'Donut',  color:'#f9a8d4', color2:'#ec4899' },
+  candy:   { type:'normal', label:'Candy',  color:'#c084fc', color2:'#9333ea' },
+  cake:    { type:'normal', label:'Cake',   color:'#fda4af', color2:'#e11d48' },
+  icecream:{ type:'normal', label:'IceCream',color:'#fbcfe8', color2:'#db2777' },
+  // Bacteria/virus: type='bad'
+  bacteria:{ type:'bad', label:'Bacteria', color:'#84cc16', color2:'#365314' },
+  virus:   { type:'bad', label:'Virus',    color:'#a855f7', color2:'#581c87' },
+  // Good: type='good'
+  probiotic:{ type:'good', label:'Probiotic', color:'#2dd4bf', color2:'#0f766e' },
+  vitamin:  { type:'good', label:'Vitamin',   color:'#fb923c', color2:'#c2410c' },
+};
+
+const PROTEIN_KEYS = ['egg','milk','cheese','chicken','steak','beans','fish'];
+const NORMAL_KEYS = ['donut','candy','cake','icecream'];
+const BAD_KEYS = ['bacteria','virus'];
+const GOOD_KEYS = ['probiotic','vitamin'];
+
+function resize() {
+  W = canvas.width = fwCanvas.width = window.innerWidth;
+  H = canvas.height = fwCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ===== SVG ITEM DRAWING =====
+function drawItemSVG(ctx, item) {
+  const {x, y, size, kind, wobble} = item;
+  const def = ITEM_DEFS[kind];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.sin(wobble) * 0.15);
+  const s = size;
+
+  switch(kind) {
+    case 'egg':
+      // Egg shape
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.38, s*0.48, 0, 0, Math.PI*2);
+      ctx.fillStyle = '#fef3c7'; ctx.fill();
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+      // Face
+      drawCuteFace(ctx, 0, 2, s*0.22);
+      break;
+
+    case 'milk':
+      // Carton
+      ctx.fillStyle = '#e0e7ff';
+      roundRect(ctx, -s*0.3, -s*0.45, s*0.6, s*0.9, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2; ctx.stroke();
+      // Stripe
+      ctx.fillStyle = '#818cf8';
+      ctx.fillRect(-s*0.3, -s*0.1, s*0.6, s*0.15);
+      // Label
+      ctx.fillStyle = '#4f46e5'; ctx.font = `bold ${s*0.18}px sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText('MILK', 0, s*0.05);
+      drawCuteFace(ctx, 0, s*0.25, s*0.18);
+      break;
+
+    case 'cheese':
+      // Triangle cheese wedge
+      ctx.beginPath();
+      ctx.moveTo(-s*0.4, s*0.3);
+      ctx.lineTo(s*0.4, s*0.3);
+      ctx.lineTo(0, -s*0.35);
+      ctx.closePath();
+      ctx.fillStyle = '#fbbf24'; ctx.fill();
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+      // Holes
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath(); ctx.arc(-0.08*s, 0.1*s, s*0.07, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0.12*s, 0.15*s, s*0.05, 0, Math.PI*2); ctx.fill();
+      drawCuteFace(ctx, 0, 0.05*s, s*0.18);
+      break;
+
+    case 'chicken':
+      // Drumstick
+      ctx.fillStyle = '#fdba74';
+      ctx.beginPath();
+      ctx.ellipse(0, -s*0.1, s*0.3, s*0.25, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 2; ctx.stroke();
+      // Bone
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(-s*0.05, s*0.15, s*0.1, s*0.3);
+      ctx.beginPath(); ctx.arc(0, s*0.45, s*0.07, 0, Math.PI*2); ctx.fill();
+      drawCuteFace(ctx, 0, -s*0.1, s*0.17);
+      break;
+
+    case 'steak':
+      // Steak shape
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.42, s*0.3, 0.2, 0, Math.PI*2);
+      ctx.fillStyle = '#ef4444'; ctx.fill();
+      ctx.strokeStyle = '#991b1b'; ctx.lineWidth = 2.5; ctx.stroke();
+      // Fat stripe
+      ctx.beginPath();
+      ctx.ellipse(s*0.1, -s*0.05, s*0.25, s*0.08, 0.3, 0, Math.PI*2);
+      ctx.fillStyle = '#fecaca'; ctx.fill();
+      drawCuteFace(ctx, 0, 0.05*s, s*0.18);
+      break;
+
+    case 'beans':
+      // Bean cluster
+      for (let i = 0; i < 5; i++) {
+        const a = (i/5)*Math.PI*2;
+        const bx = Math.cos(a)*s*0.15;
+        const by = Math.sin(a)*s*0.15;
+        ctx.beginPath();
+        ctx.ellipse(bx, by, s*0.15, s*0.1, a, 0, Math.PI*2);
+        ctx.fillStyle = i%2===0 ? '#a3e635' : '#84cc16'; ctx.fill();
+        ctx.strokeStyle = '#65a30d'; ctx.lineWidth = 1; ctx.stroke();
+      }
+      drawCuteFace(ctx, 0, 0, s*0.2);
+      break;
+
+    case 'fish':
+      // Fish body
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.42, s*0.22, 0, 0, Math.PI*2);
+      ctx.fillStyle = '#38bdf8'; ctx.fill();
+      ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 2; ctx.stroke();
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(s*0.35, 0);
+      ctx.lineTo(s*0.55, -s*0.2);
+      ctx.lineTo(s*0.55, s*0.2);
+      ctx.closePath();
+      ctx.fillStyle = '#7dd3fc'; ctx.fill();
+      ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Eye
+      ctx.beginPath(); ctx.arc(-s*0.18, -s*0.04, s*0.07, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(-s*0.16, -s*0.04, s*0.035, 0, Math.PI*2);
+      ctx.fillStyle = '#1a1a2e'; ctx.fill();
+      // Smile
+      ctx.beginPath();
+      ctx.arc(-s*0.1, s*0.05, s*0.08, 0.1, Math.PI-0.1);
+      ctx.strokeStyle = '#0369a1'; ctx.lineWidth = 1.5; ctx.stroke();
+      break;
+
+    case 'donut':
+      // Donut ring
+      ctx.beginPath();
+      ctx.arc(0, 0, s*0.38, 0, Math.PI*2);
+      ctx.fillStyle = '#f9a8d4'; ctx.fill();
+      ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, s*0.15, 0, Math.PI*2);
+      ctx.fillStyle = '#fdf2f8'; ctx.fill();
+      // Sprinkles
+      const sprColors = ['#ef4444','#3b82f6','#eab308','#22c55e','#a855f7'];
+      for(let i=0;i<8;i++){
+        const a = (i/8)*Math.PI*2;
+        const sr = s*0.28;
+        ctx.fillStyle = sprColors[i%sprColors.length];
+        ctx.save(); ctx.translate(Math.cos(a)*sr, Math.sin(a)*sr); ctx.rotate(a);
+        ctx.fillRect(-2,-1,4,2); ctx.restore();
+      }
+      drawCuteFace(ctx, 0, s*0.04, s*0.14);
+      break;
+
+    case 'candy':
+      // Candy wrapper
+      ctx.fillStyle = '#c084fc';
+      roundRect(ctx, -s*0.25, -s*0.18, s*0.5, s*0.36, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#9333ea'; ctx.lineWidth = 2; ctx.stroke();
+      // Wrapper ends
+      ctx.beginPath(); ctx.moveTo(-s*0.25,-s*0.1); ctx.lineTo(-s*0.45,-s*0.2); ctx.lineTo(-s*0.45,s*0.2); ctx.lineTo(-s*0.25,s*0.1);
+      ctx.fillStyle = '#e9d5ff'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(s*0.25,-s*0.1); ctx.lineTo(s*0.45,-s*0.2); ctx.lineTo(s*0.45,s*0.2); ctx.lineTo(s*0.25,s*0.1);
+      ctx.fill();
+      // Stripe
+      ctx.fillStyle = '#e9d5ff'; ctx.fillRect(-s*0.25, -s*0.03, s*0.5, s*0.06);
+      drawCuteFace(ctx, 0, 0, s*0.16);
+      break;
+
+    case 'cake':
+      // Cake base
+      ctx.fillStyle = '#fda4af';
+      roundRect(ctx, -s*0.35, -s*0.15, s*0.7, s*0.45, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#e11d48'; ctx.lineWidth = 2; ctx.stroke();
+      // Top
+      ctx.fillStyle = '#fecdd3';
+      roundRect(ctx, -s*0.35, -s*0.15, s*0.7, s*0.15, 6);
+      ctx.fill();
+      // Cherry
+      ctx.beginPath(); ctx.arc(0, -s*0.25, s*0.1, 0, Math.PI*2);
+      ctx.fillStyle = '#ef4444'; ctx.fill();
+      ctx.beginPath(); ctx.arc(-s*0.02, -s*0.28, s*0.03, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      drawCuteFace(ctx, 0, s*0.1, s*0.17);
+      break;
+
+    case 'icecream':
+      // Cone
+      ctx.beginPath();
+      ctx.moveTo(-s*0.2, s*0.05);
+      ctx.lineTo(0, s*0.5);
+      ctx.lineTo(s*0.2, s*0.05);
+      ctx.closePath();
+      ctx.fillStyle = '#fbbf24'; ctx.fill();
+      ctx.strokeStyle = '#d97706'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Scoop
+      ctx.beginPath(); ctx.arc(0, -s*0.08, s*0.25, 0, Math.PI*2);
+      ctx.fillStyle = '#fbcfe8'; ctx.fill();
+      ctx.strokeStyle = '#db2777'; ctx.lineWidth = 2; ctx.stroke();
+      drawCuteFace(ctx, 0, -s*0.08, s*0.16);
+      break;
+
+    case 'bacteria':
+      // Blob shape
+      ctx.beginPath();
+      for(let i=0;i<12;i++){
+        const a = (i/12)*Math.PI*2;
+        const r = s*0.35 + Math.sin(i*2.5+wobble*3)*s*0.08;
+        const fx = i===0 ? 'moveTo' : 'lineTo';
+        ctx[fx](Math.cos(a)*r, Math.sin(a)*r);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#84cc16'; ctx.fill();
+      ctx.strokeStyle = '#365314'; ctx.lineWidth = 2; ctx.stroke();
+      // Angry face
+      drawAngryFace(ctx, 0, 0, s*0.2);
+      break;
+
+    case 'virus':
+      // Spiky ball
+      ctx.beginPath();
+      for(let i=0;i<16;i++){
+        const a = (i/16)*Math.PI*2;
+        const r = i%2===0 ? s*0.42 : s*0.28;
+        const fx = i===0 ? 'moveTo' : 'lineTo';
+        ctx[fx](Math.cos(a)*r, Math.sin(a)*r);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#a855f7'; ctx.fill();
+      ctx.strokeStyle = '#581c87'; ctx.lineWidth = 2; ctx.stroke();
+      // Inner circle
+      ctx.beginPath(); ctx.arc(0,0,s*0.2,0,Math.PI*2);
+      ctx.fillStyle = '#c084fc'; ctx.fill();
+      drawAngryFace(ctx, 0, 0, s*0.15);
+      break;
+
+    case 'probiotic':
+      // Friendly blob
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.38, s*0.32, 0, 0, Math.PI*2);
+      ctx.fillStyle = '#2dd4bf'; ctx.fill();
+      ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 2; ctx.stroke();
+      // Sparkles
+      drawSparkle(ctx, -s*0.35, -s*0.3, s*0.1);
+      drawSparkle(ctx, s*0.35, -s*0.2, s*0.08);
+      drawSparkle(ctx, s*0.3, s*0.3, s*0.06);
+      // Happy face
+      drawHappyFace(ctx, 0, 0, s*0.2);
+      break;
+
+    case 'vitamin':
+      // Capsule
+      ctx.save();
+      ctx.rotate(0.3);
+      roundRect(ctx, -s*0.15, -s*0.38, s*0.3, s*0.76, s*0.15);
+      ctx.fillStyle = '#fb923c'; ctx.fill();
+      ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 2; ctx.stroke();
+      // Top half different color
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-s*0.5, -s*0.5, s, s*0.5);
+      ctx.clip();
+      roundRect(ctx, -s*0.15, -s*0.38, s*0.3, s*0.76, s*0.15);
+      ctx.fillStyle = '#fbbf24'; ctx.fill();
+      ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+      ctx.restore();
+      // Sparkles
+      drawSparkle(ctx, -s*0.3, -s*0.35, s*0.08);
+      drawSparkle(ctx, s*0.35, s*0.25, s*0.06);
+      // V label
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${s*0.25}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('V', 0, 0);
+      break;
+  }
+  ctx.restore();
+}
+
+function drawCuteFace(ctx, x, y, scale) {
+  const s = scale;
+  // Eyes
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath(); ctx.arc(x-s*0.35, y-s*0.2, s*0.13, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.35, y-s*0.2, s*0.13, 0, Math.PI*2); ctx.fill();
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(x-s*0.3, y-s*0.28, s*0.05, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.4, y-s*0.28, s*0.05, 0, Math.PI*2); ctx.fill();
+  // Smile
+  ctx.beginPath();
+  ctx.arc(x, y+s*0.05, s*0.25, 0.15, Math.PI-0.15);
+  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.stroke();
+  // Blush
+  ctx.fillStyle = 'rgba(255,150,150,0.4)';
+  ctx.beginPath(); ctx.ellipse(x-s*0.55, y+s*0.05, s*0.12, s*0.07, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x+s*0.55, y+s*0.05, s*0.12, s*0.07, 0, 0, Math.PI*2); ctx.fill();
+}
+
+function drawAngryFace(ctx, x, y, scale) {
+  const s = scale;
+  // Angry eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(x-s*0.35, y-s*0.15, s*0.18, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.35, y-s*0.15, s*0.18, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath(); ctx.arc(x-s*0.33, y-s*0.12, s*0.09, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.33, y-s*0.12, s*0.09, 0, Math.PI*2); ctx.fill();
+  // Angry brows
+  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x-s*0.55,y-s*0.4); ctx.lineTo(x-s*0.15,y-s*0.28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.55,y-s*0.4); ctx.lineTo(x+s*0.15,y-s*0.28); ctx.stroke();
+  // Grimace
+  ctx.beginPath();
+  ctx.moveTo(x-s*0.25, y+s*0.25);
+  for(let i=0;i<5;i++){
+    ctx.lineTo(x-s*0.25+i*s*0.125, y+s*0.25+(i%2===0?0:s*0.12));
+  }
+  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+function drawHappyFace(ctx, x, y, scale) {
+  const s = scale;
+  // Big happy eyes
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath(); ctx.ellipse(x-s*0.35, y-s*0.15, s*0.12, s*0.16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x+s*0.35, y-s*0.15, s*0.12, s*0.16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(x-s*0.3, y-s*0.22, s*0.05, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.4, y-s*0.22, s*0.05, 0, Math.PI*2); ctx.fill();
+  // Big smile
+  ctx.beginPath();
+  ctx.arc(x, y+s*0.1, s*0.3, 0, Math.PI);
+  ctx.fillStyle = '#1a1a2e'; ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y+s*0.13, s*0.2, 0, Math.PI);
+  ctx.fillStyle = '#f87171'; ctx.fill();
+}
+
+function drawSparkle(ctx, x, y, size) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#fef08a';
+  ctx.beginPath();
+  for(let i=0;i<4;i++){
+    const a = (i/4)*Math.PI*2;
+    ctx.lineTo(Math.cos(a)*size, Math.sin(a)*size);
+    const a2 = a + Math.PI/4;
+    ctx.lineTo(Math.cos(a2)*size*0.35, Math.sin(a2)*size*0.35);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+// ===== DINO DRAWING =====
+function drawDino(ctx, dino) {
+  const {x, y, w} = dino;
+  const s = w; // reference size
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  ctx.beginPath(); ctx.ellipse(0, s*0.42, s*0.45, s*0.06, 0, 0, Math.PI*2); ctx.fill();
+
+  // Tail
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath();
+  ctx.moveTo(s*0.2, s*0.15);
+  ctx.quadraticCurveTo(s*0.55, s*0.1, s*0.6, s*0.3);
+  ctx.quadraticCurveTo(s*0.5, s*0.25, s*0.2, s*0.25);
+  ctx.fill();
+
+  // Body
+  ctx.beginPath();
+  ctx.ellipse(0, s*0.1, s*0.3, s*0.33, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#4ade80'; ctx.fill();
+
+  // Belly
+  ctx.beginPath();
+  ctx.ellipse(0, s*0.15, s*0.2, s*0.22, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#bbf7d0'; ctx.fill();
+
+  // Feet
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath(); ctx.ellipse(-s*0.15, s*0.4, s*0.12, s*0.05, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s*0.15, s*0.4, s*0.12, s*0.05, 0, 0, Math.PI*2); ctx.fill();
+
+  // Arms
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath(); ctx.ellipse(-s*0.32, s*0.02, s*0.07, s*0.12, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s*0.32, s*0.02, s*0.07, s*0.12, -0.3, 0, Math.PI*2); ctx.fill();
+
+  // Head
+  ctx.beginPath(); ctx.arc(0, -s*0.22, s*0.24, 0, Math.PI*2);
+  ctx.fillStyle = '#4ade80'; ctx.fill();
+
+  // Spikes on head
+  const spikes = [[-0.1,-0.48],[0,-0.5],[0.1,-0.48]];
+  spikes.forEach(([sx,sy]) => {
+    ctx.beginPath(); ctx.arc(sx*s, sy*s, s*0.045, 0, Math.PI*2);
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+  });
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-s*0.1, -s*0.26, s*0.08, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.1, -s*0.26, s*0.08, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath(); ctx.arc(-s*0.08, -s*0.26, s*0.045, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.12, -s*0.26, s*0.045, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-s*0.07, -s*0.28, s*0.018, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.13, -s*0.28, s*0.018, 0, Math.PI*2); ctx.fill();
+
+  // Mouth
+  ctx.beginPath();
+  ctx.arc(0, -s*0.16, s*0.1, 0.2, Math.PI-0.2);
+  ctx.strokeStyle = '#166534'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+
+  // Blush
+  ctx.fillStyle = 'rgba(255,150,150,0.45)';
+  ctx.beginPath(); ctx.ellipse(-s*0.2, -s*0.18, s*0.05, s*0.03, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s*0.2, -s*0.18, s*0.05, s*0.03, 0, 0, Math.PI*2); ctx.fill();
+
+  // Hat
+  ctx.fillStyle = '#ef4444';
+  roundRect(ctx, -s*0.22, -s*0.52, s*0.44, s*0.12, 4);
+  ctx.fill();
+  // Hat top
+  ctx.fillStyle = '#dc2626';
+  roundRect(ctx, -s*0.15, -s*0.62, s*0.3, s*0.12, 4);
+  ctx.fill();
+  // Hat brim
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillRect(-s*0.28, -s*0.52, s*0.56, s*0.04);
+
+  // Box on hat
+  ctx.fillStyle = '#92400e';
+  roundRect(ctx, -s*0.32, -s*0.92, s*0.64, s*0.32, 5);
+  ctx.fill();
+  ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2;
+  roundRect(ctx, -s*0.32, -s*0.92, s*0.64, s*0.32, 5);
+  ctx.stroke();
+  // Box cross
+  ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, -s*0.92); ctx.lineTo(0, -s*0.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-s*0.32, -s*0.76); ctx.lineTo(s*0.32, -s*0.76); ctx.stroke();
+
+  ctx.restore();
+}
+
+// ===== GAME LOGIC =====
+function getSpawnInterval() {
+  // ms between spawns
+  return [1000, 750, 500][level-1] || 500;
+}
+function getFallSpeed() {
+  return [2.2, 3.5, 5.0][level-1] || 5.0;
+}
+function getItemSize() {
+  return Math.min(50, W * 0.08);
+}
+
+function pickRandomItem() {
+  // Weighted random based on level
+  const r = Math.random();
+  const badChance = 0.1 + level * 0.05; // 0.15, 0.2, 0.25
+  const goodChance = 0.12;
+  const proteinChance = 0.45;
+  // rest is normal food
+
+  if (r < badChance) {
+    return BAD_KEYS[Math.floor(Math.random()*BAD_KEYS.length)];
+  } else if (r < badChance + goodChance) {
+    return GOOD_KEYS[Math.floor(Math.random()*GOOD_KEYS.length)];
+  } else if (r < badChance + goodChance + proteinChance) {
+    return PROTEIN_KEYS[Math.floor(Math.random()*PROTEIN_KEYS.length)];
+  } else {
+    return NORMAL_KEYS[Math.floor(Math.random()*NORMAL_KEYS.length)];
+  }
+}
+
+function spawnItem() {
+  const size = getItemSize();
+  const kind = pickRandomItem();
+  items.push({
+    kind,
+    x: size + Math.random() * (W - size*2),
+    y: -size,
+    size,
+    speed: getFallSpeed() * (0.8 + Math.random()*0.4),
+    wobble: Math.random() * Math.PI * 2,
+  });
+}
+
+function showScorePopup(x, y, text, color) {
+  const el = document.createElement('div');
+  el.className = 'score-popup';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+function addScore(pts, x, y) {
+  score += pts;
+  if (score < 0) score = 0;
+  document.getElementById('scoreVal').textContent = score;
+  if (pts > 0) showScorePopup(x, y, '+' + pts, '#22c55e');
+  else if (pts < 0) showScorePopup(x, y, pts.toString(), '#ef4444');
+}
+
+// ===== CONTROLS =====
+let keys = {};
+window.addEventListener('keydown', e => { keys[e.key] = true; });
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+let touchX = null;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  ensureAudio();
+  const t = e.touches[0];
+  touchX = t.clientX;
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  touchX = t.clientX;
+});
+canvas.addEventListener('touchend', e => { touchX = null; });
+canvas.addEventListener('mousedown', e => { ensureAudio(); });
+
+// ===== FIREWORKS =====
+let fwParticles = [];
+function createFirework(x, y) {
+  const colors = ['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6'];
+  for(let i=0;i<60;i++){
+    const a = Math.random()*Math.PI*2;
+    const v = 2 + Math.random()*6;
+    fwParticles.push({
+      x, y,
+      vx: Math.cos(a)*v,
+      vy: Math.sin(a)*v,
+      life: 60 + Math.random()*40,
+      maxLife: 100,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      size: 2 + Math.random()*3,
+    });
+  }
+}
+
+function updateFireworks() {
+  fwCtx.clearRect(0, 0, W, H);
+  for(let i = fwParticles.length-1; i>=0; i--) {
+    const p = fwParticles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    p.life--;
+    if(p.life <= 0) { fwParticles.splice(i,1); continue; }
+    const alpha = p.life / p.maxLife;
+    fwCtx.globalAlpha = alpha;
+    fwCtx.fillStyle = p.color;
+    fwCtx.beginPath();
+    fwCtx.arc(p.x, p.y, p.size * alpha, 0, Math.PI*2);
+    fwCtx.fill();
+  }
+  fwCtx.globalAlpha = 1;
+}
+
+let fwInterval;
+function startFireworks() {
+  fwInterval = setInterval(() => {
+    createFirework(Math.random()*W, Math.random()*H*0.5);
+  }, 400);
+}
+function stopFireworks() {
+  clearInterval(fwInterval);
+  fwParticles = [];
+  fwCtx.clearRect(0, 0, W, H);
+}
+
+// ===== TROPHY SVG =====
+function showTrophy() {
+  document.getElementById('trophySvg').innerHTML = `
+  <svg width="160" height="180" viewBox="0 0 160 180" style="filter:drop-shadow(0 4px 20px rgba(255,200,0,0.5))">
+    <defs>
+      <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#fbbf24"/>
+        <stop offset="50%" style="stop-color:#f59e0b"/>
+        <stop offset="100%" style="stop-color:#d97706"/>
+      </linearGradient>
+    </defs>
+    <!-- Base -->
+    <rect x="45" y="150" width="70" height="15" rx="4" fill="#92400e"/>
+    <rect x="55" y="138" width="50" height="16" rx="3" fill="#b45309"/>
+    <!-- Stem -->
+    <rect x="72" y="110" width="16" height="32" rx="3" fill="url(#gold)"/>
+    <!-- Cup -->
+    <path d="M30,30 Q30,110 80,115 Q130,110 130,30 Z" fill="url(#gold)" stroke="#d97706" stroke-width="2"/>
+    <!-- Handles -->
+    <path d="M30,45 Q5,45 5,70 Q5,95 30,95" fill="none" stroke="#d97706" stroke-width="6" stroke-linecap="round"/>
+    <path d="M130,45 Q155,45 155,70 Q155,95 130,95" fill="none" stroke="#d97706" stroke-width="6" stroke-linecap="round"/>
+    <!-- Star -->
+    <polygon points="80,45 87,65 108,65 91,78 98,98 80,85 62,98 69,78 52,65 73,65" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+    <!-- Shine -->
+    <ellipse cx="60" cy="55" rx="8" ry="20" fill="rgba(255,255,255,0.3)" transform="rotate(-15,60,55)"/>
+  </svg>`;
+}
+
+// ===== GAME SCREENS =====
+function hideAllScreens() {
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('levelScreen').classList.add('hidden');
+  document.getElementById('winScreen').classList.add('hidden');
+}
+
+function showLevelScreen(lvl) {
+  const el = document.getElementById('levelScreen');
+  document.getElementById('levelText').textContent = lvl <= MAX_LEVEL ? `Level ${lvl}` : 'You Win!';
+  el.classList.remove('hidden');
+  return new Promise(r => setTimeout(() => { el.classList.add('hidden'); r(); }, 1500));
+}
+
+// ===== MAIN GAME =====
+async function startGame() {
+  ensureAudio();
+  stopFireworks();
+  hideAllScreens();
+  score = 0;
+  level = 1;
+  items = [];
+  spawnTimer = 0;
+  gameRunning = false;
+
+  document.getElementById('scoreVal').textContent = '0';
+  document.getElementById('levelVal').textContent = '1';
+  document.getElementById('hud').style.display = 'flex';
+
+  const dinoSize = Math.min(70, W * 0.12);
+  dino = {
+    x: W/2,
+    y: H - dinoSize * 0.6,
+    w: dinoSize,
+    speed: 7,
+  };
+
+  await showLevelScreen(1);
+  gameRunning = true;
+  sfxLevelUp();
+  requestAnimationFrame(gameLoop);
+}
+
+let lastTime = 0;
+let lastSpawn = 0;
+
+function gameLoop(time) {
+  if (!gameRunning) return;
+
+  const dt = Math.min(time - lastTime, 33);
+  lastTime = time;
+
+  // Spawn items
+  lastSpawn += dt;
+  if (lastSpawn > getSpawnInterval()) {
+    spawnItem();
+    lastSpawn = 0;
+  }
+
+  // Move dino
+  const moveSpeed = dino.speed * (dt / 16);
+  if (keys['ArrowLeft'] || keys['a']) dino.x -= moveSpeed * 5;
+  if (keys['ArrowRight'] || keys['d']) dino.x += moveSpeed * 5;
+
+  // Touch control: move towards touch
+  if (touchX !== null) {
+    const diff = touchX - dino.x;
+    dino.x += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * 6);
+  }
+
+  // Clamp dino
+  const halfBox = dino.w * 0.35;
+  dino.x = Math.max(halfBox, Math.min(W - halfBox, dino.x));
+
+  // Update items
+  const boxTop = dino.y - dino.w * 0.92;
+  const boxBottom = dino.y - dino.w * 0.6;
+  const boxLeft = dino.x - dino.w * 0.32;
+  const boxRight = dino.x + dino.w * 0.32;
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    item.y += item.speed * (dt / 16);
+    item.wobble += 0.05;
+
+    // Check catch (collision with box)
+    if (item.y > boxTop && item.y < boxBottom + item.size*0.3 &&
+        item.x > boxLeft - item.size*0.3 && item.x < boxRight + item.size*0.3) {
+      const def = ITEM_DEFS[item.kind];
+      if (def.type === 'protein')      { addScore(1, item.x, item.y); sfxCatch(); }
+      else if (def.type === 'good')    { addScore(2, item.x, item.y); sfxBonus(); }
+      else if (def.type === 'bad')     { addScore(-1, item.x, item.y); sfxBad(); }
+      // normal: no score change, just a subtle sound
+      else { sfxCatch(); }
+      items.splice(i, 1);
+      continue;
+    }
+
+    // Missed (fell off screen)
+    if (item.y > H + item.size) {
+      const def = ITEM_DEFS[item.kind];
+      if (def.type === 'protein') {
+        addScore(-1, item.x, H - 30);
+        sfxMiss();
+      }
+      items.splice(i, 1);
+    }
+  }
+
+  // Check level up
+  if (score >= GOAL * level) {
+    if (level < MAX_LEVEL) {
+      level++;
+      document.getElementById('levelVal').textContent = level;
+      items = [];
+      gameRunning = false;
+      sfxLevelUp();
+      showLevelScreen(level).then(() => {
+        gameRunning = true;
+        requestAnimationFrame(gameLoop);
+      });
+      draw();
+      return;
+    } else {
+      // WIN!
+      gameRunning = false;
+      sfxWin();
+      showTrophy();
+      document.getElementById('winScreen').classList.remove('hidden');
+      document.getElementById('hud').style.display = 'none';
+      startFireworks();
+      function fwLoop() {
+        updateFireworks();
+        if (!gameRunning) requestAnimationFrame(fwLoop);
+      }
+      fwLoop();
+      draw();
+      return;
+    }
+  }
+
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== DRAW =====
+function draw() {
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  if (level === 1) {
+    grad.addColorStop(0, '#87CEEB');
+    grad.addColorStop(0.5, '#E0F7FA');
+    grad.addColorStop(1, '#C8E6C9');
+  } else if (level === 2) {
+    grad.addColorStop(0, '#FFA726');
+    grad.addColorStop(0.5, '#FFE0B2');
+    grad.addColorStop(1, '#FFCC80');
+  } else {
+    grad.addColorStop(0, '#7E57C2');
+    grad.addColorStop(0.5, '#E1BEE7');
+    grad.addColorStop(1, '#CE93D8');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative clouds/shapes
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  const t = Date.now() * 0.0003;
+  for(let i=0; i<5; i++) {
+    const cx = ((t*50 + i*W/4) % (W+200)) - 100;
+    const cy = 60 + i*25;
+    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+25, cy-5, 22, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx-20, cy+3, 20, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Ground
+  ctx.fillStyle = 'rgba(139,195,74,0.3)';
+  ctx.fillRect(0, H-20, W, 20);
+
+  // Items
+  items.forEach(item => drawItemSVG(ctx, item));
+
+  // Dino
+  drawDino(ctx, dino);
+}
+
+// ===== INIT =====
+// Draw initial background
+(function(){
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#87CEEB'); grad.addColorStop(1,'#C8E6C9');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+})();
+</script>
+</body>
+</html>
