@@ -1,13 +1,12 @@
 {
   "name": "protein-food-game",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Protein Food Game for kids",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npx serve -s . -l 8080",
+    "build": "echo 'static site, no build needed'"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "license": "ISC"
 }
