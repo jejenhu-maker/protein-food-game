@@ -382,6 +382,9 @@ const ITEM_DEFS = {
   shrimp:  { type:'protein', label:'Shrimp', color:'#fb923c', color2:'#ea580c' },
   tofu:    { type:'protein', label:'Tofu',   color:'#fef3c7', color2:'#d97706' },
   yogurt:  { type:'protein', label:'Yogurt', color:'#e0e7ff', color2:'#6366f1' },
+  // Special kids: type='kids'
+  ruirui:  { type:'kids', label:'RuiRui', color:'#f472b6', color2:'#ec4899' },
+  kaikai:  { type:'kids', label:'KaiKai', color:'#60a5fa', color2:'#3b82f6' },
   // Non-protein: type='normal'
   donut:   { type:'normal', label:'Donut',  color:'#f9a8d4', color2:'#ec4899' },
   candy:   { type:'normal', label:'Candy',  color:'#c084fc', color2:'#9333ea' },
@@ -402,6 +405,15 @@ const PROTEIN_KEYS = ['egg','milk','cheese','chicken','steak','beans','fish','sh
 const NORMAL_KEYS = ['donut','candy','cake','icecream','fries','pizza','cookie'];
 const BAD_KEYS = ['bacteria','virus'];
 const GOOD_KEYS = ['probiotic','vitamin'];
+const KIDS_KEYS = ['ruirui','kaikai'];
+
+// Preload kid images
+const kidImages = {};
+['ruirui','kaikai'].forEach(name => {
+  const img = new Image();
+  img.src = `images/${name}.jpg`;
+  kidImages[name] = img;
+});
 
 function resize() {
   W = canvas.width = fwCanvas.width = window.innerWidth;
@@ -596,6 +608,42 @@ function drawItemSVG(ctx, item) {
       ctx.fillStyle = '#fbcfe8'; ctx.fill();
       ctx.strokeStyle = '#db2777'; ctx.lineWidth = 2; ctx.stroke();
       drawCuteFace(ctx, 0, -s*0.08, s*0.16);
+      break;
+
+    case 'ruirui':
+    case 'kaikai':
+      // Kid photo in circular frame with sparkle border
+      const kidImg = kidImages[kind];
+      const radius = s * 0.4;
+      // Glow
+      ctx.shadowColor = kind === 'ruirui' ? '#f472b6' : '#60a5fa';
+      ctx.shadowBlur = 15;
+      // Border circle
+      ctx.beginPath(); ctx.arc(0, 0, radius + 4, 0, Math.PI*2);
+      ctx.fillStyle = kind === 'ruirui' ? '#f472b6' : '#60a5fa';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Clip and draw photo
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI*2); ctx.clip();
+      if (kidImg.complete && kidImg.naturalWidth > 0) {
+        const imgS = radius * 2;
+        ctx.drawImage(kidImg, -radius, -radius, imgS, imgS);
+      } else {
+        ctx.fillStyle = kind === 'ruirui' ? '#fce7f3' : '#dbeafe'; ctx.fill();
+        ctx.fillStyle = '#333'; ctx.font = `bold ${s*0.2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(kind === 'ruirui' ? 'RR' : 'KK', 0, 0);
+      }
+      ctx.restore();
+      // Stars around
+      drawSparkle(ctx, -radius*1.1, -radius*0.8, s*0.1);
+      drawSparkle(ctx, radius*1.1, -radius*0.5, s*0.08);
+      drawSparkle(ctx, radius*0.8, radius*0.9, s*0.07);
+      // +3 label
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${s*0.22}px sans-serif`; ctx.textAlign='center';
+      ctx.strokeStyle = kind === 'ruirui' ? '#ec4899' : '#3b82f6'; ctx.lineWidth = 3;
+      ctx.strokeText('+3', 0, radius + s*0.2);
+      ctx.fillText('+3', 0, radius + s*0.2);
       break;
 
     case 'shrimp':
@@ -981,16 +1029,19 @@ function getItemSize() {
 function pickRandomItem() {
   // Weighted random based on level
   const r = Math.random();
-  const badChance = 0.1 + level * 0.05; // 0.15, 0.2, 0.25
+  const kidsChance = 0.06;  // ~6% chance for kids (rare & special!)
+  const badChance = 0.1 + level * 0.05;
   const goodChance = 0.12;
-  const proteinChance = 0.45;
+  const proteinChance = 0.42;
   // rest is normal food
 
-  if (r < badChance) {
+  if (r < kidsChance) {
+    return KIDS_KEYS[Math.floor(Math.random()*KIDS_KEYS.length)];
+  } else if (r < kidsChance + badChance) {
     return BAD_KEYS[Math.floor(Math.random()*BAD_KEYS.length)];
-  } else if (r < badChance + goodChance) {
+  } else if (r < kidsChance + badChance + goodChance) {
     return GOOD_KEYS[Math.floor(Math.random()*GOOD_KEYS.length)];
-  } else if (r < badChance + goodChance + proteinChance) {
+  } else if (r < kidsChance + badChance + goodChance + proteinChance) {
     return PROTEIN_KEYS[Math.floor(Math.random()*PROTEIN_KEYS.length)];
   } else {
     return NORMAL_KEYS[Math.floor(Math.random()*NORMAL_KEYS.length)];
@@ -1199,15 +1250,15 @@ function gameLoop(time) {
     lastSpawn = 0;
   }
 
-  // Move dino
+  // Move dino (slower, more precise control)
   const moveSpeed = dino.speed * (dt / 16);
-  if (keys['ArrowLeft'] || keys['a']) dino.x -= moveSpeed * 5;
-  if (keys['ArrowRight'] || keys['d']) dino.x += moveSpeed * 5;
+  if (keys['ArrowLeft'] || keys['a']) dino.x -= moveSpeed * 2.5;
+  if (keys['ArrowRight'] || keys['d']) dino.x += moveSpeed * 2.5;
 
-  // Touch control: move towards touch
+  // Touch control: move towards touch (smoother)
   if (touchX !== null) {
     const diff = touchX - dino.x;
-    dino.x += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * 6);
+    dino.x += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * 3);
   }
 
   // Clamp dino
@@ -1229,7 +1280,8 @@ function gameLoop(time) {
     if (item.y > boxTop && item.y < boxBottom + item.size*0.3 &&
         item.x > boxLeft - item.size*0.3 && item.x < boxRight + item.size*0.3) {
       const def = ITEM_DEFS[item.kind];
-      if (def.type === 'protein')      { addScore(1, item.x, item.y); sfxCatch(); }
+      if (def.type === 'kids')         { addScore(3, item.x, item.y); sfxBonus(); sfxBonus(); }
+      else if (def.type === 'protein') { addScore(1, item.x, item.y); sfxCatch(); }
       else if (def.type === 'good')    { addScore(2, item.x, item.y); sfxBonus(); }
       else if (def.type === 'bad')     { addScore(-1, item.x, item.y); sfxBad(); }
       // normal: no score change, just a subtle sound
@@ -1307,6 +1359,18 @@ function draw() {
   }
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
+
+  // Background kid photos (faded watermark)
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  const bgSize = Math.min(W, H) * 0.5;
+  if (kidImages.ruirui.complete) {
+    ctx.drawImage(kidImages.ruirui, W*0.1 - bgSize/2, H*0.5 - bgSize/2, bgSize, bgSize);
+  }
+  if (kidImages.kaikai.complete) {
+    ctx.drawImage(kidImages.kaikai, W*0.9 - bgSize/2, H*0.5 - bgSize/2, bgSize, bgSize);
+  }
+  ctx.restore();
 
   // Decorative clouds/shapes
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
